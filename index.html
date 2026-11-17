@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Community Hall Booking</title>
+<style>
+  :root {
+    --bg: #f4f6f8;
+    --card: #ffffff;
+    --ink: #1f2d3d;
+    --muted: #64748b;
+    --line: #e2e8f0;
+    --accent: #0d9488;
+    --accent-dark: #0f766e;
+    --accent-soft: #ccfbf1;
+    --amber: #d97706;
+    --amber-soft: #fef3c7;
+    --dewan: #2563eb;
+    --dewan-soft: #dbeafe;
+    --surau: #16a34a;
+    --surau-soft: #dcfce7;
+    --radius: 14px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.5;
+    padding-bottom: 40px;
+  }
+  header {
+    background: linear-gradient(135deg, #0d9488, #0f766e);
+    color: #fff;
+    padding: 22px 18px 18px;
+  }
+  header h1 { font-size: 1.35rem; font-weight: 700; letter-spacing: -0.01em; }
+  header p { font-size: 0.85rem; opacity: 0.9; margin-top: 2px; }
+  main { max-width: 480px; margin: 0 auto; padding: 0 14px; }
+
+  .section { margin-top: 18px; }
+  .section-head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 10px; padding: 0 2px; }
+  .section-head h2 { font-size: 1.05rem; font-weight: 700; }
+  .section-head span.sub { font-size: 0.75rem; color: var(--muted); }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
+  }
+
+  /* ---------- Section 1: Availability ---------- */
+  .chips { display: flex; gap: 8px; margin-bottom: 10px; }
+  .chip {
+    flex: 1;
+    padding: 8px 0;
+    text-align: center;
+    font-size: 0.85rem;
+    font-weight: 600;
+    border-radius: 999px;
+    border: 1.5px solid var(--line);
+    background: var(--card);
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .chip.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+  #slotList { display: flex; flex-direction: column; gap: 8px; }
+  .slot {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    cursor: pointer;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .slot:active { transform: scale(0.99); }
+  .slot.selected {
+    border: 2px solid var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+    background: #f0fdfa;
+  }
+  .slot .when { flex: 1; min-width: 0; }
+  .slot .date { font-weight: 600; font-size: 0.92rem; }
+  .slot .time { font-size: 0.82rem; color: var(--muted); }
+  .hall-badge {
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+  .hall-badge.dewan { background: var(--dewan-soft); color: var(--dewan); }
+  .hall-badge.surau { background: var(--surau-soft); color: var(--surau); }
+  .slot .pick {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--accent);
+    white-space: nowrap;
+  }
+  .slot.selected .pick { display: none; }
+  .slot.selected .picked-tag {
+    display: inline-flex;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--accent-dark);
+    background: var(--accent-soft);
+    padding: 4px 10px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+  .picked-tag { display: none; }
+  .empty-note {
+    padding: 18px 14px;
+    text-align: center;
+    font-size: 0.85rem;
+    color: var(--muted);
+  }
+
+  /* ---------- Section 2: Planner ---------- */
+  .planner-card { padding: 16px; }
+  .field { margin-bottom: 12px; }
+  .field label {
+    display: block;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 5px;
+  }
+  .field input, .field select {
+    width: 100%;
+    padding: 10px 12px;
+    font-size: 0.95rem;
+    border: 1.5px solid var(--line);
+    border-radius: 10px;
+    background: #fff;
+    color: var(--ink);
+    font-family: inherit;
+  }
+  .field input:focus, .field select:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+  }
+  .field-row { display: flex; gap: 10px; }
+  .field-row .field { flex: 1; }
+
+  .layout-area { margin-top: 16px; }
+  .layout-title {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .layout-title .count { text-transform: none; letter-spacing: 0; font-weight: 700; color: var(--ink); }
+  .floor {
+    background: #fafcfb repeating-linear-gradient(45deg, #f1f5f4 0 12px, transparent 12px 24px);
+    border: 2px dashed #cbd5d1;
+    border-radius: 12px;
+    min-height: 170px;
+    padding: 16px 10px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    align-content: center;
+    justify-content: center;
+    gap: 18px 14px;
+  }
+  .floor-empty {
+    width: 100%;
+    text-align: center;
+    font-size: 0.85rem;
+    color: var(--muted);
+  }
+  .table-unit { position: relative; width: 84px; height: 84px; }
+  .table-top {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 46px; height: 46px;
+    border-radius: 50%;
+    background: #b45309;
+    border: 3px solid #92400e;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 0.6rem;
+    font-weight: 700;
+    z-index: 2;
+  }
+  .chair {
+    position: absolute;
+    width: 16px; height: 16px;
+    border-radius: 5px;
+    background: #94a3b8;
+    border: 2px solid #64748b;
+    z-index: 1;
+  }
+  .layout-controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .ctl-btn {
+    padding: 11px 0;
+    font-size: 0.88rem;
+    font-weight: 700;
+    border-radius: 10px;
+    border: 1.5px solid var(--line);
+    background: #fff;
+    color: var(--ink);
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.1s;
+  }
+  .ctl-btn:active { background: var(--bg); }
+  .ctl-btn:disabled { opacity: 0.4; cursor: default; }
+  .ctl-btn.add-t { border-color: #b45309; color: #b45309; }
+  .ctl-btn.rem-t { color: var(--muted); }
+  .ctl-btn.add-c { border-color: #475569; color: #334155; }
+  .ctl-btn.rem-c { color: var(--muted); }
+  .capacity-hint {
+    margin-top: 12px;
+    font-size: 0.82rem;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: var(--accent-soft);
+    color: var(--accent-dark);
+    font-weight: 500;
+  }
+  .capacity-hint.warn { background: var(--amber-soft); color: var(--amber); }
+  .preset-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1.2fr 0.8fr;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .preset-btn {
+    padding: 9px 4px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    border-radius: 999px;
+    border: 1.5px solid var(--accent);
+    background: #fff;
+    color: var(--accent-dark);
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.1s;
+  }
+  .preset-btn:active { background: var(--accent-soft); }
+  .preset-btn[data-preset="clear"] { border-color: var(--line); color: var(--muted); }
+  .suggest-box {
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    font-size: 0.82rem;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: var(--amber-soft);
+    color: var(--amber);
+    font-weight: 500;
+  }
+  .suggest-apply {
+    flex-shrink: 0;
+    padding: 7px 16px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    border-radius: 999px;
+    border: 1.5px solid var(--amber);
+    background: #fff;
+    color: var(--amber);
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .suggest-apply:active { background: #fffbeb; }
+
+  /* ---------- Section 3: Summary ---------- */
+  .summary-card { padding: 16px; }
+  .sum-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 9px 0;
+    border-bottom: 1px dashed var(--line);
+    font-size: 0.9rem;
+  }
+  .sum-row:last-of-type { border-bottom: none; }
+  .sum-row .k { color: var(--muted); white-space: nowrap; }
+  .sum-row .v { font-weight: 600; text-align: right; word-break: break-word; }
+  .sum-row.missing .v {
+    color: var(--amber);
+    background: var(--amber-soft);
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 0.8rem;
+  }
+  .send-btn {
+    width: 100%;
+    margin-top: 14px;
+    padding: 14px 0;
+    font-size: 1rem;
+    font-weight: 700;
+    color: #fff;
+    background: var(--accent);
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    font-family: inherit;
+    box-shadow: 0 2px 6px rgba(13, 148, 136, 0.35);
+  }
+  .send-btn:active { background: var(--accent-dark); }
+  .send-btn:disabled {
+    background: #cbd5e1;
+    box-shadow: none;
+    cursor: default;
+  }
+  .confirm-state { text-align: center; padding: 10px 0; }
+  .confirm-state .tick {
+    width: 64px; height: 64px;
+    border-radius: 50%;
+    background: var(--accent-soft);
+    color: var(--accent-dark);
+    font-size: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 10px;
+  }
+  .confirm-state h3 { font-size: 1.05rem; margin-bottom: 4px; }
+  .confirm-state p { font-size: 0.85rem; color: var(--muted); margin-bottom: 14px; }
+  .reset-btn {
+    padding: 11px 22px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    border-radius: 10px;
+    border: 1.5px solid var(--accent);
+    background: #fff;
+    color: var(--accent-dark);
+    cursor: pointer;
+    font-family: inherit;
+  }
+  footer {
+    max-width: 480px;
+    margin: 22px auto 0;
+    padding: 0 16px;
+    font-size: 0.72rem;
+    color: var(--muted);
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Community Hall Booking</h1>
+  <p>Tempahan Dewan Komuniti &middot; Check free slots &amp; plan your setup</p>
+</header>
+
+<main>
+  <!-- ============ SECTION 1: AVAILABILITY ============ -->
+  <section class="section" id="availability">
+    <div class="section-head">
+      <h2>1. Availability</h2>
+      <span class="sub">Contoh slot kosong &middot; sample data</span>
+    </div>
+    <div class="chips" id="hallChips">
+      <button class="chip active" data-hall="all">All halls</button>
+      <button class="chip" data-hall="dewan">Dewan</button>
+      <button class="chip" data-hall="surau">Surau</button>
+    </div>
+    <div id="slotList"></div>
+  </section>
+
+  <!-- ============ SECTION 2: LAYOUT PLANNER ============ -->
+  <section class="section" id="planner">
+    <div class="section-head">
+      <h2>2. Layout Planner</h2>
+      <span class="sub">Atur meja &amp; kerusi</span>
+    </div>
+    <div class="card planner-card">
+      <div class="field-row">
+        <div class="field">
+          <label for="inpHall">Hall</label>
+          <select id="inpHall">
+            <option value="">Choose hall…</option>
+            <option value="dewan">Dewan Seri Melati</option>
+            <option value="dewan2">Dewan Anggerik</option>
+            <option value="surau">Surau Al-Hidayah</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="inpDate">Date</label>
+          <input type="date" id="inpDate">
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label for="inpSlot">Time slot</label>
+          <select id="inpSlot">
+            <option value="">Choose slot…</option>
+            <option>9:00 AM – 12:00 PM</option>
+            <option>2:00 PM – 5:00 PM</option>
+            <option>8:00 PM – 11:00 PM</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="inpPhone">Phone number</label>
+          <input type="tel" id="inpPhone" placeholder="e.g. 012-345 6789" inputmode="tel">
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label for="inpPurpose">Purpose</label>
+          <select id="inpPurpose">
+            <option value="">Choose purpose…</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="inpGuests">Guests (optional)</label>
+          <input type="number" id="inpGuests" placeholder="e.g. 120" min="0" max="1000" inputmode="numeric">
+        </div>
+      </div>
+
+      <div class="layout-area">
+        <div class="layout-title">
+          <span>Live layout preview</span>
+          <span class="count" id="layoutCount">0 tables &middot; 0 chairs</span>
+        </div>
+        <div class="floor" id="floor"></div>
+        <div class="preset-row">
+          <button class="preset-btn" data-preset="kenduri">Kenduri</button>
+          <button class="preset-btn" data-preset="talk">Talk / Doa</button>
+          <button class="preset-btn" data-preset="meeting">Meeting</button>
+          <button class="preset-btn" data-preset="clear">Clear</button>
+        </div>
+        <div class="layout-controls">
+          <button class="ctl-btn add-t" id="addTable">+ Table</button>
+          <button class="ctl-btn rem-t" id="remTable">− Table</button>
+          <button class="ctl-btn add-c" id="addChair">+ Chair</button>
+          <button class="ctl-btn rem-c" id="remChair">− Chair</button>
+        </div>
+        <div class="capacity-hint" id="capacityHint"></div>
+        <div class="suggest-box" id="suggestBox" style="display:none">
+          <span id="suggestText"></span>
+          <button class="suggest-apply" id="suggestApply">Apply</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SECTION 3: REQUEST SUMMARY ============ -->
+  <section class="section" id="summary">
+    <div class="section-head">
+      <h2>3. Request Summary</h2>
+      <span class="sub">Semak sebelum hantar</span>
+    </div>
+    <div class="card summary-card" id="summaryCard">
+      <div id="summaryBody">
+        <div class="sum-row" id="rowHall"><span class="k">Hall</span><span class="v" id="sumHall"></span></div>
+        <div class="sum-row" id="rowDate"><span class="k">Date &amp; time</span><span class="v" id="sumDateTime"></span></div>
+        <div class="sum-row" id="rowPhone"><span class="k">Phone</span><span class="v" id="sumPhone"></span></div>
+        <div class="sum-row" id="rowPurpose"><span class="k">Purpose</span><span class="v" id="sumPurpose"></span></div>
+        <div class="sum-row" id="rowGuests"><span class="k">Guests</span><span class="v" id="sumGuests"></span></div>
+        <div class="sum-row" id="rowLayout"><span class="k">Layout</span><span class="v" id="sumLayout"></span></div>
+        <button class="send-btn" id="sendBtn" disabled>Kirim Permohonan &middot; Send Request</button>
+      </div>
+      <div id="confirmBody" style="display:none" class="confirm-state">
+        <div class="tick">&#10003;</div>
+        <h3>Permohonan dihantar!</h3>
+        <p id="confirmDetail"></p>
+        <button class="reset-btn" id="resetBtn">Make a new request</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  Demo app with sample data only &middot; nothing is saved or sent anywhere.
+</footer>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ---------- Sample data (contoh sahaja) ---------- */
+  var HALLS = {
+    dewan: { name: "Dewan Seri Melati", label: "Dewan", type: "dewan" },
+    dewan2: { name: "Dewan Anggerik", label: "Dewan", type: "dewan" },
+    surau: { name: "Surau Al-Hidayah", label: "Surau", type: "surau" }
+  };
+  var SLOTS = [
+    { hall: "dewan", date: "2026-11-18", time: "9:00 AM – 12:00 PM" },
+    { hall: "surau", date: "2026-11-18", time: "8:00 PM – 11:00 PM" },
+    { hall: "dewan2", date: "2026-11-19", time: "2:00 PM – 5:00 PM" },
+    { hall: "dewan", date: "2026-11-21", time: "2:00 PM – 5:00 PM" },
+    { hall: "dewan", date: "2026-11-21", time: "8:00 PM – 11:00 PM" },
+    { hall: "dewan2", date: "2026-11-22", time: "9:00 AM – 12:00 PM" },
+    { hall: "surau", date: "2026-11-22", time: "9:00 AM – 12:00 PM" },
+    { hall: "dewan", date: "2026-11-25", time: "9:00 AM – 12:00 PM" },
+    { hall: "surau", date: "2026-11-25", time: "8:00 PM – 11:00 PM" },
+    { hall: "dewan2", date: "2026-11-28", time: "2:00 PM – 5:00 PM" },
+    { hall: "surau", date: "2026-11-28", time: "2:00 PM – 5:00 PM" },
+    { hall: "dewan", date: "2026-11-28", time: "2:00 PM – 5:00 PM" },
+    { hall: "dewan2", date: "2026-12-02", time: "8:00 PM – 11:00 PM" },
+    { hall: "dewan", date: "2026-12-05", time: "9:00 AM – 12:00 PM" },
+    { hall: "surau", date: "2026-12-05", time: "2:00 PM – 5:00 PM" }
+  ];
+  var MAX_TABLES = 12, MAX_CHAIRS = 120;
+  var CHAIRS_PER_TABLE = 8; // seats drawn around each table
+
+  var PURPOSES = [
+    { value: "kenduri", label: "Kenduri / wedding reception", preset: { tables: 10, chairs: 80 } },
+    { value: "talk", label: "Talk / majlis doa", preset: { tables: 0, chairs: 40 } },
+    { value: "meeting", label: "Meeting / mesyuarat", preset: { tables: 2, chairs: 16 } },
+    { value: "other", label: "Other", preset: null }
+  ];
+
+  var state = {
+    filter: "all",
+    selectedSlot: null,   // index into SLOTS, or null
+    tables: 0,
+    chairs: 0,
+    sent: false
+  };
+
+  var $ = function (id) { return document.getElementById(id); };
+  var fmtDate = function (iso) {
+    var d = new Date(iso + "T00:00:00");
+    return d.toLocaleDateString("en-MY", { weekday: "short", day: "numeric", month: "short", year: "numeric" });
+  };
+
+  /* ================= Section 1: Availability ================= */
+  function renderSlots() {
+    var list = $("slotList");
+    list.innerHTML = "";
+    var shown = 0;
+    SLOTS.forEach(function (s, i) {
+      if (state.filter !== "all" && HALLS[s.hall].type !== state.filter) return;
+      shown++;
+      var el = document.createElement("div");
+      el.className = "card slot" + (state.selectedSlot === i ? " selected" : "");
+      el.innerHTML =
+        '<span class="hall-badge ' + s.hall + '">' + HALLS[s.hall].label + "</span>" +
+        '<span class="when"><span class="date">' + fmtDate(s.date) + "</span>" +
+        '<br><span class="time">' + s.time + " &middot; " + HALLS[s.hall].name + "</span></span>" +
+        '<span class="pick">Use &rsaquo;</span>' +
+        '<span class="picked-tag">&#10003; Chosen</span>';
+      el.addEventListener("click", function () { pickSlot(i); });
+      list.appendChild(el);
+    });
+    if (shown === 0) {
+      var empty = document.createElement("div");
+      empty.className = "card empty-note";
+      empty.textContent = "No free " + (state.filter === "all" ? "" : state.filter + " ") +
+        "slots in the sample list. Try another filter.";
+      list.appendChild(empty);
+    }
+  }
+
+  function pickSlot(i) {
+    state.selectedSlot = i;
+    var s = SLOTS[i];
+    $("inpHall").value = s.hall;
+    $("inpDate").value = s.date;
+    $("inpSlot").value = s.time;
+    state.sent = false;
+    renderSlots();
+    renderLayout();
+    renderSummary();
+    $("planner").scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  $("hallChips").addEventListener("click", function (e) {
+    var chip = e.target.closest(".chip");
+    if (!chip) return;
+    state.filter = chip.dataset.hall;
+    document.querySelectorAll("#hallChips .chip").forEach(function (c) {
+      c.classList.toggle("active", c === chip);
+    });
+    renderSlots();
+  });
+
+  /* ================= Section 2: Layout planner ================= */
+  function renderLayout() {
+    var floor = $("floor");
+    floor.innerHTML = "";
+    var t = state.tables, c = state.chairs;
+
+    if (t === 0 && c === 0) {
+      var empty = document.createElement("div");
+      empty.className = "floor-empty";
+      empty.textContent = "Empty hall — add tables and chairs below";
+      floor.appendChild(empty);
+    } else {
+      // Distribute chairs evenly across tables; leftovers lean against the wall
+      var perTable = t > 0 ? Math.floor(c / t) : 0;
+      var leftover = t > 0 ? c % t : c;
+      for (var i = 0; i < t; i++) {
+        var unit = document.createElement("div");
+        unit.className = "table-unit";
+        var top = document.createElement("div");
+        top.className = "table-top";
+        top.textContent = "T" + (i + 1);
+        unit.appendChild(top);
+        var around = Math.min(perTable, 10); // max 10 drawn per table for readability
+        for (var j = 0; j < around; j++) {
+          var ang = (Math.PI * 2 * j) / around - Math.PI / 2;
+          var ch = document.createElement("div");
+          ch.className = "chair";
+          ch.style.left = (42 + Math.cos(ang) * 33 - 8) + "px";
+          ch.style.top = (42 + Math.sin(ang) * 33 - 8) + "px";
+          unit.appendChild(ch);
+        }
+        floor.appendChild(unit);
+      }
+      if (leftover > 0 && t > 0) {
+        var loose = document.createElement("div");
+        loose.className = "floor-empty";
+        loose.style.fontSize = "0.75rem";
+        loose.textContent = "+ " + leftover + " spare chair" + (leftover > 1 ? "s" : "") + " by the wall";
+        floor.appendChild(loose);
+      }
+      if (t === 0 && c > 0) {
+        var only = document.createElement("div");
+        only.className = "floor-empty";
+        only.textContent = c + " chair" + (c > 1 ? "s" : "") + " in rows (no tables)";
+        floor.appendChild(only);
+      }
+    }
+
+    $("layoutCount").textContent = t + " table" + (t === 1 ? "" : "s") + " \u00b7 " + c + " chair" + (c === 1 ? "" : "s");
+    $("addTable").disabled = t >= MAX_TABLES;
+    $("remTable").disabled = t <= 0;
+    $("addChair").disabled = c >= MAX_CHAIRS;
+    $("remChair").disabled = c <= 0;
+
+    // Capacity hint
+    var hint = $("capacityHint");
+    var seats = t * CHAIRS_PER_TABLE;
+    if (t === 0 && c === 0) {
+      hint.textContent = "Tip: each round table seats up to " + CHAIRS_PER_TABLE + " guests.";
+      hint.className = "capacity-hint";
+    } else if (t === 0) {
+      hint.textContent = "Chairs without tables — fine for a talk or doa session.";
+      hint.className = "capacity-hint";
+    } else if (c === 0) {
+      hint.textContent = "No chairs yet — guests will be standing (berdiri). Add some chairs!";
+      hint.className = "capacity-hint warn";
+    } else if (c < t) {
+      hint.textContent = "Only " + c + " chair" + (c === 1 ? "" : "s") + " for " + t + " tables — some tables have no seats.";
+      hint.className = "capacity-hint warn";
+    } else {
+      var seated = Math.min(c, seats);
+      var extra = c - seats;
+      var msg = t + " table" + (t === 1 ? "" : "s") + " \u00d7 " + CHAIRS_PER_TABLE + " seats = up to " + seats +
+        " guests. You have " + c + " chair" + (c === 1 ? "" : "s") + " — " + seated + " seated";
+      msg += extra > 0 ? ", " + extra + " spare." : ".";
+      hint.textContent = msg;
+      hint.className = "capacity-hint";
+    }
+    guestSuggestion();
+    renderSummary();
+  }
+
+  $("addTable").addEventListener("click", function () { state.tables++; renderLayout(); });
+  $("remTable").addEventListener("click", function () { state.tables = Math.max(0, state.tables - 1); renderLayout(); });
+  $("addChair").addEventListener("click", function () { state.chairs++; renderLayout(); });
+  $("remChair").addEventListener("click", function () { state.chairs = Math.max(0, state.chairs - 1); renderLayout(); });
+
+  // Presets: one-tap layouts
+  document.querySelectorAll(".preset-btn").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var key = btn.dataset.preset;
+      state.sent = false;
+      if (key === "clear") {
+        state.tables = 0;
+        state.chairs = 0;
+      } else {
+        var p = PURPOSES.find(function (x) { return x.value === key; });
+        state.tables = p.preset.tables;
+        state.chairs = p.preset.chairs;
+      }
+      renderLayout();
+    });
+  });
+
+  // Purpose dropdown: populate + auto-apply its preset when the floor is empty
+  (function initPurpose() {
+    var sel = $("inpPurpose");
+    PURPOSES.forEach(function (p) {
+      var opt = document.createElement("option");
+      opt.value = p.value;
+      opt.textContent = p.label;
+      sel.appendChild(opt);
+    });
+    sel.addEventListener("change", function () {
+      state.sent = false;
+      var p = PURPOSES.find(function (x) { return x.value === sel.value; });
+      if (p && p.preset && state.tables === 0 && state.chairs === 0) {
+        state.tables = p.preset.tables;
+        state.chairs = p.preset.chairs;
+        renderLayout();
+      } else {
+        renderSummary();
+      }
+    });
+  })();
+
+  // Guest count: smart layout suggestion
+  function guestSuggestion() {
+    var g = parseInt($("inpGuests").value, 10);
+    var box = $("suggestBox");
+    if (!g || g <= 0) {
+      box.style.display = "none";
+      return;
+    }
+    var purpose = $("inpPurpose").value;
+    var needTables, needChairs, what;
+    if (purpose === "talk") {
+      needTables = 0;
+      needChairs = g;
+      what = g + " chairs in rows";
+    } else {
+      needTables = Math.min(MAX_TABLES, Math.ceil(g / CHAIRS_PER_TABLE));
+      needChairs = Math.min(MAX_CHAIRS, g);
+      what = needTables + " tables \u00d7 " + CHAIRS_PER_TABLE + " seats (" + needChairs + " chairs)";
+    }
+    var alreadyOk = state.tables === needTables && state.chairs >= Math.min(needChairs, state.tables * CHAIRS_PER_TABLE || needChairs);
+    if (alreadyOk) {
+      box.style.display = "none";
+      return;
+    }
+    $("suggestText").textContent =
+      "For " + g + " guests: " + what + " would fit better. Current: " +
+      state.tables + " tables, " + state.chairs + " chairs.";
+    box.style.display = "flex";
+  }
+
+  $("suggestApply").addEventListener("click", function () {
+    var g = parseInt($("inpGuests").value, 10);
+    if (!g || g <= 0) return;
+    var purpose = $("inpPurpose").value;
+    state.sent = false;
+    if (purpose === "talk") {
+      state.tables = 0;
+      state.chairs = Math.min(MAX_CHAIRS, g);
+    } else {
+      state.tables = Math.min(MAX_TABLES, Math.ceil(g / CHAIRS_PER_TABLE));
+      state.chairs = Math.min(MAX_CHAIRS, g);
+    }
+    renderLayout();
+  });
+
+  ["inpHall", "inpDate", "inpSlot", "inpPhone", "inpGuests"].forEach(function (id) {
+    $(id).addEventListener("input", function () { state.sent = false; renderSummary(); });
+    $(id).addEventListener("change", function () { state.sent = false; renderSummary(); });
+  });
+  // Guest count changes should also re-evaluate the layout suggestion
+  $("inpGuests").addEventListener("input", guestSuggestion);
+  $("inpGuests").addEventListener("change", guestSuggestion);
+
+  /* ================= Section 3: Summary ================= */
+  function renderSummary() {
+    var hall = $("inpHall").value;
+    var date = $("inpDate").value;
+    var slot = $("inpSlot").value;
+    var phone = $("inpPhone").value.trim();
+
+    setRow("rowHall", "sumHall", hall ? HALLS[hall].name : "Please choose a hall", !hall);
+    var when = "";
+    if (date) when = fmtDate(date);
+    if (slot) when += (when ? " \u00b7 " : "") + slot;
+    setRow("rowDate", "sumDateTime", when || "Please pick a date & time slot", !when);
+    setRow("rowPhone", "sumPhone", phone || "Please enter your phone number", !phone);
+
+    var purposeSel = $("inpPurpose");
+    var purposeOpt = PURPOSES.find(function (p) { return p.value === purposeSel.value; });
+    setRow("rowPurpose", "sumPurpose", purposeOpt ? purposeOpt.label : "Optional — choose a purpose", false);
+
+    var guests = $("inpGuests").value;
+    setRow("rowGuests", "sumGuests", guests ? guests + " pax" : "Not specified", false);
+
+    var layoutTxt;
+    if (state.tables === 0 && state.chairs === 0) {
+      layoutTxt = "No layout yet — add tables & chairs above";
+    } else {
+      layoutTxt = state.tables + " table" + (state.tables === 1 ? "" : "s") + ", " +
+        state.chairs + " chair" + (state.chairs === 1 ? "" : "s");
+      if (state.tables > 0) {
+        layoutTxt += " (" + Math.min(state.chairs, state.tables * CHAIRS_PER_TABLE) + " seats)";
+      }
+    }
+    setRow("rowLayout", "sumLayout", layoutTxt, false);
+
+    var ready = hall && date && slot && phone && (state.tables > 0 || state.chairs > 0);
+    $("sendBtn").disabled = !ready;
+
+    if (state.sent) {
+      $("summaryBody").style.display = "none";
+      $("confirmBody").style.display = "block";
+    } else {
+      $("summaryBody").style.display = "block";
+      $("confirmBody").style.display = "none";
+    }
+  }
+
+  function setRow(rowId, valId, text, missing) {
+    $(rowId).classList.toggle("missing", !!missing);
+    $(valId).textContent = text;
+  }
+
+  $("sendBtn").addEventListener("click", function () {
+    state.sent = true;
+    var s = SLOTS[state.selectedSlot];
+    $("confirmDetail").textContent =
+      (s ? HALLS[s.hall].name + " \u00b7 " + fmtDate(s.date) + " \u00b7 " + s.time : "Your booking request") +
+      " has been noted. This is a demo — no real request was sent.";
+    renderSummary();
+    $("summary").scrollIntoView({ behavior: "smooth", block: "center" });
+  });
+
+  $("resetBtn").addEventListener("click", function () {
+    state.sent = false;
+    state.tables = 0;
+    state.chairs = 0;
+    state.selectedSlot = null;
+    $("inpHall").value = "";
+    $("inpDate").value = "";
+    $("inpSlot").value = "";
+    $("inpPhone").value = "";
+    $("inpPurpose").value = "";
+    $("inpGuests").value = "";
+    $("suggestBox").style.display = "none";
+    renderSlots();
+    renderLayout();
+    renderSummary();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  });
+
+  /* ---------- Init: never open empty ---------- */
+  renderSlots();
+  renderLayout();
+  renderSummary();
+})();
+</script>
+</body>
+</html>
